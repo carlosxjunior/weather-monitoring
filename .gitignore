@@ -1,0 +1,27 @@
+# Go
+collector/vendor/
+*.exe
+
+# Python
+notifier/__pycache__/
+notifier/.venv/
+notifier/.python_packages/
+notifier/local.settings.json
+**/__pycache__/
+*.pyc
+*.pyo
+.env
+
+# Azure Functions
+notifier/.funcignore
+
+# Build artifacts
+bin/
+dist/
+*.zip
+
+# IDE
+.vscode/
+.idea/
+*.suo
+*.user

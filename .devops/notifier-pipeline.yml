@@ -1,0 +1,56 @@
+trigger:
+  branches:
+    include:
+      - main
+      - develop
+  paths:
+    include:
+      - notifier/**
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/main') }}:
+    environment: prod
+    functionAppName: func-collector-prod
+    azureServiceConnection: sc-azure-weather-prod
+  ${{ else }}:
+    environment: dev
+    functionAppName: func-collector-dev
+    azureServiceConnection: sc-azure-weather-dev
+
+stages:
+  - stage: Deploy
+    displayName: Deploy Function App
+    jobs:
+      - job: ZipDeploy
+        displayName: Package and deploy notifier
+        steps:
+          - task: UsePythonVersion@0
+            displayName: Use Python 3.13
+            inputs:
+              versionSpec: "3.13"
+
+          - script: |
+              cd notifier
+              pip install --target=".python_packages/lib/site-packages" -r requirements.txt
+            displayName: Install dependencies into package dir
+
+          - task: ArchiveFiles@2
+            displayName: Zip notifier package
+            inputs:
+              rootFolderOrFile: notifier/
+              includeRootFolder: false
+              archiveType: zip
+              archiveFile: $(Build.ArtifactStagingDirectory)/notifier.zip
+
+          - task: AzureFunctionApp@2
+            displayName: Deploy to Function App
+            inputs:
+              connectedServiceNameARM: $(azureServiceConnection)
+              appType: functionAppLinux
+              appName: $(functionAppName)
+              package: $(Build.ArtifactStagingDirectory)/notifier.zip
+              runtimeStack: PYTHON|3.13
+              deploymentMethod: zipDeploy
