@@ -1,0 +1,65 @@
+trigger:
+  branches:
+    include:
+      - main
+      - develop
+  paths:
+    include:
+      - collector/**
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  imageName: monitoring-collector
+  containerAppJob: weather
+  ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/main') }}:
+    environment: prod
+    acrName: acrcollectorprod
+    resourceGroup: rg-collector-prod
+    acrServiceConnection: sc-acr-collector-prod
+    azureServiceConnection: sc-azure-weather-prod
+  ${{ else }}:
+    environment: dev
+    acrName: acrcollectordev
+    resourceGroup: rg-collector-dev
+    acrServiceConnection: sc-acr-collector-dev
+    azureServiceConnection: sc-azure-weather-dev
+
+stages:
+  - stage: Build
+    displayName: Build and push image
+    jobs:
+      - job: BuildAndPush
+        displayName: Docker build and push to ACR
+        steps:
+          - task: Docker@2
+            displayName: Build and push
+            inputs:
+              containerRegistry: $(acrServiceConnection)
+              repository: $(imageName)
+              command: buildAndPush
+              Dockerfile: collector/Dockerfile
+              buildContext: collector/
+              tags: |
+                $(Build.BuildId)
+                latest
+
+  - stage: Deploy
+    displayName: Deploy to Container App Job
+    dependsOn: Build
+    jobs:
+      - job: UpdateJob
+        displayName: Update Container App Job image
+        steps:
+          - task: AzureCLI@2
+            displayName: az containerapp job update
+            inputs:
+              azureSubscription: $(azureServiceConnection)
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                az containerapp job update \
+                  --name $(containerAppJob) \
+                  --resource-group $(resourceGroup) \
+                  --image $(acrName).azurecr.io/$(imageName):$(Build.BuildId)

@@ -1,0 +1,12 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "python",
+    "SERVICEBUS_NAMESPACE": "sbns-collector-dev.servicebus.windows.net",
+    "SERVICEBUS_QUEUE_NAME": "sbq-collector"
+    "AUTH_METHOD": "cli",
+    "TELEGRAM_BOT_TOKEN": "<your-bot-token>",
+    "TELEGRAM_CHAT_ID": "<your-chat-id>"
+  }
+}
